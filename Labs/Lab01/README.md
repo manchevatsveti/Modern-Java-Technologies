@@ -40,7 +40,7 @@ public static String[] justifyText(String[] words, int maxWidth) {
 ## Examples
 
 1. Given the input `{"The", "quick", "brown", "fox", "jumps", "over", "the", "lazy", "dog."}` and a maximum width of `11`, the output should be:
-   ```arduino
+```arduino
    {"The   quick",
    "brown   fox",
    "jumps  over",
