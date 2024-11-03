@@ -1,15 +1,16 @@
 package bg.sofia.uni.fmi.mjt.socialnetwork.profile;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
 public class DefaultUserProfile  implements  UserProfile {
 
-    private String username;
-    private Set<Interest> interests = new HashSet<>();
-    private Set<UserProfile> friends = new HashSet<>();
+    private final String username;
+    private final Set<Interest> interests = new HashSet<>();
+    private final Set<UserProfile> friends = new HashSet<>();
 
     public DefaultUserProfile(String username) {
         this.username = username;
@@ -34,11 +35,6 @@ public class DefaultUserProfile  implements  UserProfile {
     }
 
     @Override
-    public Collection<Interest> getInterests() {
-        return interests;
-    }
-
-    @Override
     public boolean addInterest(Interest interest) {
         if (interest == null) {
             throw new IllegalArgumentException("Adding null interest.");
@@ -55,20 +51,35 @@ public class DefaultUserProfile  implements  UserProfile {
     }
 
     @Override
+    public Collection<Interest> getInterests() {
+        return Collections.unmodifiableSet(interests);
+    }
+
+    @Override
     public Collection<UserProfile> getFriends() {
-        return friends;
+        return Collections.unmodifiableSet(friends);
     }
 
     @Override
     public boolean addFriend(UserProfile userProfile) {
         if (userProfile == null) {
-            throw new IllegalArgumentException("Adding null friend.");
+            throw new IllegalArgumentException("Cannot add null as a friend");
         }
-        if (userProfile.equals(this)) {
-            throw new IllegalArgumentException("Can't add oneself as a friend");
+        if (this.equals(userProfile)) {
+            throw new IllegalArgumentException("A user cannot add themselves as a friend");
         }
 
-        return (friends.add(userProfile) && userProfile.getFriends().add(this));
+        if (!friends.add(userProfile)) {
+            return false;
+        }
+
+        if (!userProfile.isFriend(this)) {
+            if (!userProfile.addFriend(this)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     @Override
@@ -76,7 +87,20 @@ public class DefaultUserProfile  implements  UserProfile {
         if (userProfile == null) {
             throw new IllegalArgumentException("Unfriending null user");
         }
-        return (friends.remove(userProfile) && userProfile.getFriends().remove(this));
+        if (this.equals(userProfile)) {
+            throw new IllegalArgumentException("A user cannot unfriend themselves");
+        }
+
+        if (!friends.remove(userProfile)) {
+            return false;
+        }
+
+        if (userProfile.isFriend(this)) {
+            if (!userProfile.unfriend(this)) { //if there is trouble with the unfriending method in the userProfile
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override

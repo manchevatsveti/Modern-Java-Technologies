@@ -3,6 +3,7 @@ package bg.sofia.uni.fmi.mjt.socialnetwork.post;
 import bg.sofia.uni.fmi.mjt.socialnetwork.profile.UserProfile;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -22,17 +23,10 @@ public class SocialFeedPost implements  Post {
         this.author = author;
         this.content = content;
         publishTime = LocalDateTime.now();
-        initializeMapWithReactions();
     }
 
     private String generateUniqueId() {
         return UUID.randomUUID().toString();
-    }
-
-    private void initializeMapWithReactions() {
-        for (ReactionType type : ReactionType.values()) {
-            reactions.put(type, new HashSet<>());
-        }
     }
 
     @Override
@@ -73,8 +67,20 @@ public class SocialFeedPost implements  Post {
         if (userProfile == null || reactionType == null) {
             throw new IllegalArgumentException("User profile and reaction type cannot be null");
         }
-        removeReaction(userProfile);
-        return reactions.get(reactionType).add(userProfile);
+        if (reactions.containsKey(reactionType) && reactions.get(reactionType).contains(userProfile)) {
+            return false;
+        }
+
+        boolean isFirstReactionOfUser = !removeReaction(userProfile);
+
+        Set<UserProfile> userProfiles = reactions.get(reactionType);
+        if (userProfiles == null) {
+            userProfiles = new HashSet<>();
+            reactions.put(reactionType, userProfiles);
+        }
+        userProfiles.add(userProfile);
+
+        return isFirstReactionOfUser;
     }
 
     @Override
@@ -84,17 +90,34 @@ public class SocialFeedPost implements  Post {
         }
 
         boolean removed = false;
+        Set<ReactionType> emptyReactionTypes = new HashSet<>();
+
         for (Map.Entry<ReactionType, Set<UserProfile>> entry : reactions.entrySet()) {
-            if (entry.getValue().remove(userProfile)) {
+            Set<UserProfile> userProfiles = entry.getValue();
+            if (userProfiles.remove(userProfile)) {
                 removed = true;
+                // Mark reaction type for removal if no more users react with it
+                if (userProfiles.isEmpty()) {
+                    emptyReactionTypes.add(entry.getKey());
+                }
             }
         }
+
+        // Remove all empty reaction types outside the loop to avoid concurrent modification
+        for (ReactionType reactionType : emptyReactionTypes) {
+            reactions.remove(reactionType);
+        }
+
         return removed;
     }
 
     @Override
     public Map<ReactionType, Set<UserProfile>> getAllReactions() {
-        return reactions;
+        Map<ReactionType, Set<UserProfile>> unmodifiableReactions = new HashMap<>();
+        for (Map.Entry<ReactionType, Set<UserProfile>> entry : reactions.entrySet()) {
+            unmodifiableReactions.put(entry.getKey(), Collections.unmodifiableSet(entry.getValue()));
+        }
+        return Collections.unmodifiableMap(unmodifiableReactions);
     }
 
     @Override
@@ -102,7 +125,8 @@ public class SocialFeedPost implements  Post {
         if (reactionType == null) {
             throw new IllegalArgumentException("Reaction type cannot be null");
         }
-        return reactions.get(reactionType).size();
+        Set<UserProfile> users = reactions.get(reactionType);
+        return users != null ? users.size() : 0;
     }
 
     @Override

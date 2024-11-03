@@ -8,6 +8,7 @@ import bg.sofia.uni.fmi.mjt.socialnetwork.profile.UserProfile;
 import bg.sofia.uni.fmi.mjt.socialnetwork.profile.UserProfileFriendsComparator;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.SortedSet;
@@ -23,6 +24,9 @@ public class SocialNetworkImpl implements SocialNetwork {
     }
 
     private boolean isRegistered(UserProfile userProfile) {
+        if (userProfile == null) {
+            throw new IllegalArgumentException("User profile cannot be null");
+        }
         return users.contains(userProfile);
     }
 
@@ -39,7 +43,12 @@ public class SocialNetworkImpl implements SocialNetwork {
 
     @Override
     public Set<UserProfile> getAllUsers() {
-        return users;
+        return Collections.unmodifiableSet(users);
+    }
+
+    @Override
+    public Collection<Post> getPosts() {
+        return Collections.unmodifiableSet(posts);
     }
 
     @Override
@@ -60,11 +69,6 @@ public class SocialNetworkImpl implements SocialNetwork {
     }
 
     @Override
-    public Collection<Post> getPosts() {
-        return posts;
-    }
-
-    @Override
     public Set<UserProfile> getReachedUsers(Post post) {
         if (post == null) {
             throw new IllegalArgumentException("Post cannot be null");
@@ -81,12 +85,16 @@ public class SocialNetworkImpl implements SocialNetwork {
 
     private void dfs(UserProfile user, Set<UserProfile> reachedUsers,
                      Set<UserProfile> visited, UserProfile initialUser) {
+        if (user == null || initialUser == null) {
+            throw new IllegalArgumentException("User profiles cannot be null");
+        }
+
         visited.add(user);
 
         for (UserProfile friend : user.getFriends()) {
             if (!visited.contains(friend)) {
                 if (!initialUser.getInterests().isEmpty() && !user.getInterests().isEmpty()) {
-                    if ( areThereCommonInterests(initialUser.getInterests(), friend.getInterests())) {
+                    if (areThereCommonInterests(initialUser.getInterests(), friend.getInterests())) {
                         reachedUsers.add(friend);
                     }
                 }
@@ -96,6 +104,10 @@ public class SocialNetworkImpl implements SocialNetwork {
     }
 
     private boolean areThereCommonInterests(Collection<Interest> interests1, Collection<Interest> interests2) {
+        if (interests1 == null || interests2 == null) {
+            return false;
+        }
+
         for (Interest interest : interests1) {
             if (interests2.contains(interest)) {
                 return true;
