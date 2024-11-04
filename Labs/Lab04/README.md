@@ -198,8 +198,6 @@ public enum ReactionType {
 
 ## Packages
 
-Please adhere to the package names for all the types described above, as otherwise, your solution will not be automatically testable.
-
 ```
 src
 └── bg.sofia.uni.fmi.mjt.socialnetwork
