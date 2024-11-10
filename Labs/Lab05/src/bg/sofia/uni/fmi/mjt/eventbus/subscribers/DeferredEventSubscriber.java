@@ -1,11 +1,11 @@
 package bg.sofia.uni.fmi.mjt.eventbus.subscribers;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
 import bg.sofia.uni.fmi.mjt.eventbus.events.Event;
+import bg.sofia.uni.fmi.mjt.eventbus.events.EventComparator;
 
 public class DeferredEventSubscriber<T extends Event<?>> implements Subscriber<T>, Iterable<T> {
 
@@ -34,9 +34,8 @@ public class DeferredEventSubscriber<T extends Event<?>> implements Subscriber<T
     @Override
     public Iterator<T> iterator() {
         List<T> sortedEvents = new ArrayList<>(events);
-        sortedEvents.sort(Comparator.comparingInt(Event::getPriority));
+        sortedEvents.sort(new EventComparator<>());
         return sortedEvents.iterator();
-
     }
 
     /**

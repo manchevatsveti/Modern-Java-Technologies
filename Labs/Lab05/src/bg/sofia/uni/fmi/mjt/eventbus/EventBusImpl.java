@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -30,6 +30,7 @@ public class EventBusImpl implements EventBus {
 
         if (subscribers == null) {
             subscribers = new ArrayList<>();
+            subscriptions.put(eventType, subscribers);
         }
         if (!subscribers.contains(subscriber)) {
             subscribers.add(subscriber);
@@ -79,7 +80,9 @@ public class EventBusImpl implements EventBus {
         if (from == null || to == null) {
             throw new IllegalArgumentException("Getting event logs with a null timestamp");
         }
+
         List<Event<?>> filteredEvents = new ArrayList<>();
+
         for (Event<?> event : eventLogs) {
             if (eventType.isInstance(event) &&
                 !event.getTimestamp().isBefore(from) &&
@@ -87,7 +90,7 @@ public class EventBusImpl implements EventBus {
                 filteredEvents.add(event);
             }
         }
-
+        filteredEvents.sort(Comparator.comparing(Event::getTimestamp));
         return Collections.unmodifiableList(filteredEvents);
     }
 
