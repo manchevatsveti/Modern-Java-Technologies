@@ -58,4 +58,5 @@ public class AthleteTest {
         assertEquals(athlete.hashCode(), anotherAthlete.hashCode(),
             "Athletes with the same attributes should have the same hash code.");
     }
+
 }

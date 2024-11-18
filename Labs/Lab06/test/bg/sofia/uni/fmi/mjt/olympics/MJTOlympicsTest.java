@@ -143,5 +143,4 @@ public class MJTOlympicsTest {
             "Exception should be thrown when the nationality is not in the medal table.");
 
     }
-
 }

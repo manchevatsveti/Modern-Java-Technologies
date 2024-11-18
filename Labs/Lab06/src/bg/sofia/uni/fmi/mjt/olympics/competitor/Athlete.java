@@ -1,9 +1,12 @@
 package bg.sofia.uni.fmi.mjt.olympics.competitor;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 public class Athlete implements Competitor {
 
@@ -11,18 +14,19 @@ public class Athlete implements Competitor {
     private final String name;
     private final String nationality;
 
-    private final Set<Medal> medals;
+    private final EnumMap<Medal, Integer> medals;
 
     public Athlete(String identifier, String name, String nationality) {
         this.identifier = identifier;
         this.name = name;
         this.nationality = nationality;
-        this.medals = new HashSet<>();
+        this.medals = new EnumMap<>(Medal.class);
     }
 
     public void addMedal(Medal medal) {
         validateMedal(medal);
-        medals.add(medal);
+        medals.putIfAbsent(medal, 0);
+        medals.put(medal, medals.getOrDefault(medal, 0) + 1);
     }
 
     public void validateMedal(Medal medal) {
@@ -47,8 +51,12 @@ public class Athlete implements Competitor {
     }
 
     @Override
-    public Set<Medal> getMedals() {
-        return Collections.unmodifiableSet(medals);
+    public Collection<Medal> getMedals() {
+        List<Medal> result = new ArrayList<>();
+        for (Map.Entry<Medal, Integer> entry : medals.entrySet()) {
+            result.addAll(Collections.nCopies(entry.getValue(), entry.getKey()));
+        }
+        return Collections.unmodifiableList(result);
     }
 
     @Override
