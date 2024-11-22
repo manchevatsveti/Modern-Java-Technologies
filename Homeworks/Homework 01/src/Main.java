@@ -13,9 +13,9 @@ public class Main {
         char[][] mapLayout = {
             {'#', '#', '#', '.', '#'},
             {'#', 'B', '.', 'R', '.'},
-            {'.', '.', '#', 'A', '#'},
-            {'#', 'C', '.', '.', 'C'},
-            {'#', '.', '#', '#', '#'}
+            {'.', '.', '#', 'A'},
+            {'#', 'C', '.', '#', 'C'},
+            {'#', '.', '.', '.', '.'}
         };
 
         // Initialize Glovo with the map layout
@@ -44,7 +44,7 @@ public class Main {
             printDeliveryDetails(fastestUnderPrice);
 
             // Cheapest delivery within time limit
-            Delivery cheapestWithinTime = glovoApp.getCheapestDeliveryWithinTimeLimit(client2, restaurant, "Pasta", 12);
+            Delivery cheapestWithinTime = glovoApp.getCheapestDeliveryWithinTimeLimit(client2, restaurant, "Pasta", 100);
             System.out.println("\nCheapest Delivery Within Time Limit:");
             printDeliveryDetails(cheapestWithinTime);
 

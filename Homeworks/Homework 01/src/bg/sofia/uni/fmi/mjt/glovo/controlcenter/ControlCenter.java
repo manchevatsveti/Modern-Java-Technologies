@@ -98,9 +98,12 @@ public class ControlCenter implements ControlCenterApi {
 
     private int bfsShortestPath(Location start, Location end) {
         int rows = mapLayout.length;
-        int cols = mapLayout[0].length;
 
-        boolean[][] visited = new boolean[rows][cols];
+        boolean[][] visited = new boolean[rows][]; // we could have different sized rows
+        for (int i = 0; i < rows; i++) {
+            visited[i] = new boolean[mapLayout[i].length];
+        }
+
         Queue<int[]> queue = initializeQueue(start, visited);
 
         while (!queue.isEmpty()) {
@@ -108,7 +111,7 @@ public class ControlCenter implements ControlCenterApi {
             if (isTarget(current, end)) {
                 return current[2];
             }
-            addNeighborsToQueue(queue, visited, current, rows, cols);
+            addNeighborsToQueue(queue, visited, current);
         }
 
         return Integer.MAX_VALUE; // No path found
@@ -125,7 +128,7 @@ public class ControlCenter implements ControlCenterApi {
         return current[0] == end.x() && current[1] == end.y();
     }
 
-    private void addNeighborsToQueue(Queue<int[]> queue, boolean[][] visited, int[] current, int rows, int cols) {
+    private void addNeighborsToQueue(Queue<int[]> queue, boolean[][] visited, int[] current) {
         int[] dx = {-1, 1, 0, 0};
         int[] dy = {0, 0, -1, 1};
 
@@ -133,15 +136,15 @@ public class ControlCenter implements ControlCenterApi {
             int nx = current[0] + dx[i];
             int ny = current[1] + dy[i];
 
-            if (isValidMove(nx, ny, rows, cols, visited)) {
+            if (isValidMove(nx, ny, visited)) {
                 queue.offer(new int[]{nx, ny, current[2] + 1});
                 visited[nx][ny] = true;
             }
         }
     }
 
-    private boolean isValidMove(int nx, int ny, int rows, int cols, boolean[][] visited) {
-        return nx >= 0 && nx < rows && ny >= 0 && ny < cols // Check boundaries
+    private boolean isValidMove(int nx, int ny, boolean[][] visited) {
+        return nx >= 0 && nx < mapLayout.length && ny >= 0 && ny < mapLayout[nx].length // Check boundaries
             && !visited[nx][ny]
             && mapLayout[nx][ny].type() != MapEntityType.WALL; // Avoid walls
     }
