@@ -30,20 +30,8 @@ public class MapBuilder {
         MapEntity[] entities = new MapEntity[cols];
         for (int j = 0; j < cols; j++) {
             Location location = new Location(rowIndex, j);
-            entities[j] = new MapEntity(location, determineEntityType(row[j]));
+            entities[j] = new MapEntity(location, MapEntityType.fromSymbol(row[j]));
         }
         return entities;
-    }
-
-    private static MapEntityType determineEntityType(char mapChar) {
-        return switch (mapChar) {
-            case '.' -> MapEntityType.ROAD;
-            case '#' -> MapEntityType.WALL;
-            case 'R' -> MapEntityType.RESTAURANT;
-            case 'C' -> MapEntityType.CLIENT;
-            case 'A' -> MapEntityType.DELIVERY_GUY_CAR;
-            case 'B' -> MapEntityType.DELIVERY_GUY_BIKE;
-            default -> throw new IllegalArgumentException("Unknown map entity type: " + mapChar);
-        };
     }
 }
