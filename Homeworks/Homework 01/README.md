@@ -153,8 +153,6 @@ src
 ---
 
 ## Notes  
-- Ensure you adhere to package names and method signatures for automatic testing.  
 - Validate all inputs and handle exceptions appropriately.  
 - Optimize algorithms for better performance where feasible.  
 
-Good luck and happy coding! 🚀
