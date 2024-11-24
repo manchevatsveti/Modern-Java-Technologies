@@ -11,20 +11,20 @@ public class Main {
     public static void main(String[] args) {
         // Define the map layout
         char[][] mapLayout = {
-            {'#', '#', '#', '.', '#'},
-            {'#', 'B', '.', 'R', '.'},
-            {'.', '.', '#', 'A'},
+            {'#', '#', '#', '.', 'C'},
+            {'#', '.', 'B', '.', 'R'},
+            {'.', '.', '#', '.', '.'},
             {'#', 'C', '.', '#', 'C'},
-            {'#', '.', '.', '.', '.'}
+            {'#', '.', '.', 'A', '.'}
         };
 
         // Initialize Glovo with the map layout
         Glovo glovoApp = new Glovo(mapLayout);
 
         // Define entities
-        MapEntity client = new MapEntity(new Location(3, 1), MapEntityType.CLIENT);
+        MapEntity client = new MapEntity(new Location(0, 4), MapEntityType.CLIENT);
         MapEntity client2 = new MapEntity(new Location(3, 4), MapEntityType.CLIENT);
-        MapEntity restaurant = new MapEntity(new Location(1, 3), MapEntityType.RESTAURANT);
+        MapEntity restaurant = new MapEntity(new Location(1, 4), MapEntityType.RESTAURANT);
 
         // Perform deliveries
         try {

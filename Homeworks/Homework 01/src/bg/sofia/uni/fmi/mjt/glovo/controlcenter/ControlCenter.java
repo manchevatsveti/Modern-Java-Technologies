@@ -75,7 +75,29 @@ public class ControlCenter implements ControlCenterApi {
     }
 
     private boolean isBetterCandidate(DeliveryInfo current, double newPrice, int newTime, ShippingMethod method) {
-        return method == ShippingMethod.CHEAPEST ? newPrice < current.price() : newTime < current.estimatedTime();
+        return switch (method) {
+            case CHEAPEST -> isCheaper(newPrice, current.price())
+                || (arePricesEqual(newPrice, current.price()) && isFaster(newTime, current.estimatedTime()));
+            case FASTEST -> isFaster(newTime, current.estimatedTime())
+                || (areTimesEqual(newTime, current.estimatedTime()) && isCheaper(newPrice, current.price()));
+            default -> throw new IllegalArgumentException("Unsupported shipping method: " + method);
+        };
+    }
+
+    private boolean isCheaper(double newPrice, double currentPrice) {
+        return newPrice < currentPrice;
+    }
+
+    private boolean arePricesEqual(double price1, double price2) {
+        return Double.compare(price1, price2) == 0;
+    }
+
+    private boolean isFaster(int newTime, int currentTime) {
+        return newTime < currentTime;
+    }
+
+    private boolean areTimesEqual(int time1, int time2) {
+        return time1 == time2;
     }
 
     private int calculateTotalDistance(Location deliveryGuy, Location restaurant, Location client) {
