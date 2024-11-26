@@ -8,13 +8,16 @@ import bg.sofia.uni.fmi.mjt.glovo.delivery.DeliveryInfo;
 import bg.sofia.uni.fmi.mjt.glovo.delivery.DeliveryType;
 import bg.sofia.uni.fmi.mjt.glovo.delivery.ShippingMethod;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 
 public class ControlCenter implements ControlCenterApi {
 
     private static final double NO_CONSTRAINT = -1;
-    private static final int DIRECTIONS_COUNT = 4;
 
     private final MapEntity[][] mapLayout;
 
@@ -25,18 +28,26 @@ public class ControlCenter implements ControlCenterApi {
     @Override
     public DeliveryInfo findOptimalDeliveryGuy(Location restaurantLocation, Location clientLocation,
                                                double maxPrice, int maxTime, ShippingMethod method) {
-        validateInputs(restaurantLocation, clientLocation, method);
+
+        validateObjectNotNull(restaurantLocation, "Restaurant location is null.");
+        validateObjectNotNull(clientLocation, "Client location is null.");
+        validateObjectNotNull(method, "Shipping method is null.");
 
         DeliveryInfo bestDelivery = null;
 
         for (MapEntity[] row : mapLayout) {
             for (MapEntity entity : row) {
                 if (isDeliveryGuy(entity)) {
-                    DeliveryInfo candidate = createDeliveryInfo(entity, restaurantLocation, clientLocation,
-                        maxPrice, maxTime, method, bestDelivery);
 
-                    if (candidate != null) {
-                        bestDelivery = candidate;
+                    //it creates a delivery only if the constraints are met
+                    DeliveryInfo tempDelivery = createDeliveryInfo(entity, restaurantLocation, clientLocation,
+                        maxPrice, maxTime);
+
+                    if (tempDelivery != null) {
+                        if (bestDelivery == null || isBetterDeliveryOption(tempDelivery, bestDelivery, method)) {
+                            //if there is no bestDelivery or if we found better delivery option, we change it
+                            bestDelivery = tempDelivery;
+                        }
                     }
                 }
             }
@@ -45,58 +56,64 @@ public class ControlCenter implements ControlCenterApi {
     }
 
     private boolean isDeliveryGuy(MapEntity entity) {
-        return entity != null && (entity.type() == MapEntityType.DELIVERY_GUY_CAR ||
-            entity.type() == MapEntityType.DELIVERY_GUY_BIKE);
+        return entity.type() == MapEntityType.DELIVERY_GUY_CAR ||
+            entity.type() == MapEntityType.DELIVERY_GUY_BIKE;
     }
 
-    private DeliveryInfo createDeliveryInfo(MapEntity entity, Location restaurant, Location client, double maxPrice,
-                                            int maxTime, ShippingMethod method, DeliveryInfo currentBest) {
+    private DeliveryInfo createDeliveryInfo(MapEntity entity, Location restaurant, Location client,
+                                            double maxPrice, int maxTime) {
 
         DeliveryType type = entity.type() == MapEntityType.DELIVERY_GUY_CAR ? DeliveryType.CAR : DeliveryType.BIKE;
+
         int distance = calculateTotalDistance(entity.location(), restaurant, client);
 
         if (distance == Integer.MAX_VALUE) {
-            // If no valid path exists, skip this delivery guy
+            // if no valid path exists, we skip this delivery guy
             return null;
         }
 
         double price = distance * type.getPricePerKm();
         int time = distance * type.getTimePerKm();
 
-        if ((maxPrice == NO_CONSTRAINT || price <= maxPrice) //compare doubles
+        if ((maxPrice == NO_CONSTRAINT || price <= maxPrice) //comparing doubles
             && (maxTime == NO_CONSTRAINT || time <= maxTime)) {
-            if ((currentBest == null || isBetterCandidate(currentBest, price, time, method))) {
-                return new DeliveryInfo(entity.location(), price, time, type);
-            }
+            return new DeliveryInfo(entity.location(), price, time, type);
         }
 
-        //If no delivery guy is able to deliver under given constraints
+        //if the delivery guy is not able to deliver under given constraints
         return null;
     }
 
-    private boolean isBetterCandidate(DeliveryInfo current, double newPrice, int newTime, ShippingMethod method) {
+    private boolean isBetterDeliveryOption(DeliveryInfo temp, DeliveryInfo currentBest, ShippingMethod method) {
         return switch (method) {
-            case CHEAPEST -> isCheaper(newPrice, current.price())
-                || (arePricesEqual(newPrice, current.price()) && isFaster(newTime, current.estimatedTime()));
-            case FASTEST -> isFaster(newTime, current.estimatedTime())
-                || (areTimesEqual(newTime, current.estimatedTime()) && isCheaper(newPrice, current.price()));
-            default -> throw new IllegalArgumentException("Unsupported shipping method: " + method);
+            case CHEAPEST -> isCheaper(temp.price(), currentBest.price())
+                || (arePricesEqual(temp.price(), currentBest.price()) &&
+                isFaster(temp.estimatedTime(), currentBest.estimatedTime()));
+
+            case FASTEST -> isFaster(temp.estimatedTime(), currentBest.estimatedTime())
+                || (areTimesEqual(temp.estimatedTime(), currentBest.estimatedTime()) &&
+                isCheaper(temp.price(), currentBest.price()));
+
         };
     }
 
     private boolean isCheaper(double newPrice, double currentPrice) {
+
         return newPrice < currentPrice;
     }
 
     private boolean arePricesEqual(double price1, double price2) {
+
         return Double.compare(price1, price2) == 0;
     }
 
     private boolean isFaster(int newTime, int currentTime) {
+
         return newTime < currentTime;
     }
 
     private boolean areTimesEqual(int time1, int time2) {
+
         return time1 == time2;
     }
 
@@ -105,20 +122,51 @@ public class ControlCenter implements ControlCenterApi {
         int toClient = bfsShortestPath(restaurant, client);
 
         if (toRestaurant == Integer.MAX_VALUE || toClient == Integer.MAX_VALUE) {
-            // If either path is not reachable, return max value
+            // if either path is not reachable, return max value
             return Integer.MAX_VALUE;
         }
 
         return toRestaurant + toClient;
     }
 
-    private void validateInputs(Location restaurant, Location client, ShippingMethod method) {
-        if (restaurant == null || client == null || method == null) {
-            throw new IllegalArgumentException("Invalid arguments: locations or shipping method cannot be null.");
+    public static <T> void validateObjectNotNull(T obj, String errorMssg) {
+        if (obj == null) {
+            throw new IllegalArgumentException(errorMssg);
         }
     }
 
     private int bfsShortestPath(Location start, Location end) {
+        //using the bfs traversal method for finding the shortest path in an unweighted graph
+
+        boolean[][] visited = initializeVisited();
+        Queue<Location> queue = new LinkedList<>();
+        queue.add(start);
+
+        Map<Location, Integer> distances = new HashMap<>(); //storing the cells and their distance from the start
+        distances.put(start, 0);
+
+        while (!queue.isEmpty()) {
+            Location current = queue.poll();
+            visited[current.x()][current.y()] = true;
+
+            if (isTarget(current, end)) {
+                return distances.get(current);
+            }
+
+            for (Location neighbour : getNeighbours(current)) {
+                if (!visited[neighbour.x()][neighbour.y()]) {
+                    queue.add(neighbour);
+                    visited[neighbour.x()][neighbour.y()] = true;
+
+                    int currentDistance = distances.get(current);
+                    distances.put(neighbour, currentDistance + 1);
+                }
+            }
+        }
+        return Integer.MAX_VALUE; // no path found
+    }
+
+    private boolean[][] initializeVisited() {
         int rows = mapLayout.length;
 
         boolean[][] visited = new boolean[rows][]; // we could have different sized rows
@@ -126,49 +174,34 @@ public class ControlCenter implements ControlCenterApi {
             visited[i] = new boolean[mapLayout[i].length];
         }
 
-        Queue<int[]> queue = initializeQueue(start, visited);
+        return visited;
+    }
 
-        while (!queue.isEmpty()) {
-            int[] current = queue.poll();
-            if (isTarget(current, end)) {
-                return current[2];
-            }
-            addNeighborsToQueue(queue, visited, current);
+    private boolean isTarget(Location current, Location end) {
+        return current.x() == end.x() && current.y() == end.y();
+    }
+
+    private List<Location> getNeighbours(Location current) {
+        List<Location> neighbours = new ArrayList<>();
+
+        if (isValidMove(current.x() + 1, current.y())) {
+            neighbours.add(mapLayout[current.x() + 1][current.y()].location());
         }
-
-        return Integer.MAX_VALUE; // No path found
-    }
-
-    private Queue<int[]> initializeQueue(Location start, boolean[][] visited) {
-        Queue<int[]> queue = new LinkedList<>();
-        queue.offer(new int[]{start.x(), start.y(), 0});
-        visited[start.x()][start.y()] = true;
-        return queue;
-    }
-
-    private boolean isTarget(int[] current, Location end) {
-        return current[0] == end.x() && current[1] == end.y();
-    }
-
-    private void addNeighborsToQueue(Queue<int[]> queue, boolean[][] visited, int[] current) {
-        int[] dx = {-1, 1, 0, 0};
-        int[] dy = {0, 0, -1, 1};
-
-        for (int i = 0; i < DIRECTIONS_COUNT; i++) {
-            int nx = current[0] + dx[i];
-            int ny = current[1] + dy[i];
-
-            if (isValidMove(nx, ny, visited)) {
-                queue.offer(new int[]{nx, ny, current[2] + 1});
-                visited[nx][ny] = true;
-            }
+        if (isValidMove(current.x() - 1, current.y())) {
+            neighbours.add(mapLayout[current.x() - 1][current.y()].location());
         }
+        if (isValidMove(current.x(), current.y() + 1)) {
+            neighbours.add(mapLayout[current.x()][current.y() + 1].location());
+        }
+        if (isValidMove(current.x(), current.y() - 1)) {
+            neighbours.add(mapLayout[current.x()][current.y() - 1].location());
+        }
+        return neighbours;
     }
 
-    private boolean isValidMove(int nx, int ny, boolean[][] visited) {
-        return nx >= 0 && nx < mapLayout.length && ny >= 0 && ny < mapLayout[nx].length // Check boundaries
-            && !visited[nx][ny]
-            && mapLayout[nx][ny].type() != MapEntityType.WALL; // Avoid walls
+    private boolean isValidMove(int nx, int ny) {
+        return nx >= 0 && nx < mapLayout.length && ny >= 0 && ny < mapLayout[nx].length // check boundaries
+            && mapLayout[nx][ny].type() != MapEntityType.WALL; // avoid walls
     }
 
     @Override

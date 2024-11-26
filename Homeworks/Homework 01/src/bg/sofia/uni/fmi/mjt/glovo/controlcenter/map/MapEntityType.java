@@ -33,7 +33,7 @@ public enum MapEntityType {
 
     public static MapEntityType fromSymbol(char symbol) {
         if (!SYMBOL_TO_ENTITY_MAP.containsKey(symbol)) {
-            throw new IllegalMapEntityException("Unknown map entity type: " + symbol);
+            throw new IllegalMapEntityException("Invalid symbol in the Map Layout.");
         }
         return SYMBOL_TO_ENTITY_MAP.get(symbol);
     }

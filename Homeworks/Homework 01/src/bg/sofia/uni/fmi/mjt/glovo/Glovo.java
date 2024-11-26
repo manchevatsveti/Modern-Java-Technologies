@@ -17,10 +17,7 @@ public class Glovo implements GlovoApi {
     private final ControlCenter controlCenter;
 
     public Glovo(char[][] mapLayout) {
-        if (mapLayout == null || mapLayout.length == 0) {
-            throw new IllegalArgumentException("Map layout cannot be null or empty.");
-        }
-        this.controlCenter = new ControlCenter(mapLayout);
+        this.controlCenter = new ControlCenter(mapLayout); //validation is handled in MapBuilder class
     }
 
     @Override
@@ -68,7 +65,7 @@ public class Glovo implements GlovoApi {
 
     private void validateEntity(MapEntity entity, MapEntityType expectedType, String errorMessage) {
         if (entity == null || entity.location() == null) {
-            throw new InvalidOrderException(errorMessage + " MapEntity or its location cannot be null.");
+            throw new InvalidOrderException(errorMessage);
         }
         Location location = entity.location();
         if (!isInDefinedBoundaries(location)) {

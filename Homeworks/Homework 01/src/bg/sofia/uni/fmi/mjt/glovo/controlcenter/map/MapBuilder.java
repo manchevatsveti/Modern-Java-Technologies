@@ -26,7 +26,7 @@ public class MapBuilder {
     }
 
     private static MapEntity[] initializeRow(char[] row, int rowIndex) {
-        int cols = row.length;
+        int cols = row.length; //we could have different sized rows, so we calculate each one individually
         MapEntity[] entities = new MapEntity[cols];
         for (int j = 0; j < cols; j++) {
             Location location = new Location(rowIndex, j);
