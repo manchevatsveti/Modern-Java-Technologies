@@ -9,7 +9,6 @@ import bg.sofia.uni.fmi.mjt.glovo.exception.NoAvailableDeliveryGuyException;
 public class Main {
 
     public static void main(String[] args) {
-        // Define the map layout
         char[][] mapLayout = {
             {'#', '#', '#', '.', 'C'},
             {'#', '.', 'B', '.', 'R'},
@@ -18,15 +17,12 @@ public class Main {
             {'#', '.', '.', 'A', '.'}
         };
 
-        // Initialize Glovo with the map layout
         Glovo glovoApp = new Glovo(mapLayout);
 
-        // Define entities
         MapEntity client = new MapEntity(new Location(0, 4), MapEntityType.CLIENT);
         MapEntity client2 = new MapEntity(new Location(3, 4), MapEntityType.CLIENT);
         MapEntity restaurant = new MapEntity(new Location(1, 4), MapEntityType.RESTAURANT);
 
-        // Perform deliveries
         try {
             // Cheapest delivery
             Delivery cheapestDelivery = glovoApp.getCheapestDelivery(client, restaurant, "Pizza");

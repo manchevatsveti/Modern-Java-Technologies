@@ -12,7 +12,8 @@ import bg.sofia.uni.fmi.mjt.glovo.exception.NoAvailableDeliveryGuyException;
 
 public class Glovo implements GlovoApi {
 
-    private static final double NO_CONSTRAINT = -1;
+    private static final int NO_CONSTRAINT_TIME = -1;
+    private static final double NO_CONSTRAINT_PRICE = -1;
 
     private final ControlCenter controlCenter;
 
@@ -21,67 +22,70 @@ public class Glovo implements GlovoApi {
     }
 
     @Override
-    public Delivery getCheapestDelivery(MapEntity client, MapEntity restaurant, String foodItem)
+    public Delivery getCheapestDelivery(MapEntity client, MapEntity restaurant, String food)
         throws NoAvailableDeliveryGuyException {
-        return processDelivery(client, restaurant, foodItem, ShippingMethod.CHEAPEST,
-            NO_CONSTRAINT, (int)NO_CONSTRAINT);
+        return processDelivery(client, restaurant, food, ShippingMethod.CHEAPEST,
+            NO_CONSTRAINT_PRICE, NO_CONSTRAINT_TIME);
     }
 
     @Override
-    public Delivery getFastestDelivery(MapEntity client, MapEntity restaurant, String foodItem)
+    public Delivery getFastestDelivery(MapEntity client, MapEntity restaurant, String food)
         throws NoAvailableDeliveryGuyException {
-        return processDelivery(client, restaurant, foodItem, ShippingMethod.FASTEST, NO_CONSTRAINT, (int)NO_CONSTRAINT);
+        return processDelivery(client, restaurant, food, ShippingMethod.FASTEST,
+            NO_CONSTRAINT_PRICE, NO_CONSTRAINT_TIME);
     }
 
     @Override
-    public Delivery getFastestDeliveryUnderPrice(MapEntity client, MapEntity restaurant, String foodItem,
+    public Delivery getFastestDeliveryUnderPrice(MapEntity client, MapEntity restaurant, String food,
                                                  double maxPrice) throws NoAvailableDeliveryGuyException {
-        return processDelivery(client, restaurant, foodItem, ShippingMethod.FASTEST, maxPrice, (int)NO_CONSTRAINT);
+        return processDelivery(client, restaurant, food, ShippingMethod.FASTEST, maxPrice, NO_CONSTRAINT_TIME);
     }
 
     @Override
-    public Delivery getCheapestDeliveryWithinTimeLimit(MapEntity client, MapEntity restaurant, String foodItem,
+    public Delivery getCheapestDeliveryWithinTimeLimit(MapEntity client, MapEntity restaurant, String food,
                                                        int maxTime) throws NoAvailableDeliveryGuyException {
-        return processDelivery(client, restaurant, foodItem, ShippingMethod.CHEAPEST, NO_CONSTRAINT, maxTime);
+        return processDelivery(client, restaurant, food, ShippingMethod.CHEAPEST, NO_CONSTRAINT_PRICE, maxTime);
     }
 
-    private Delivery processDelivery(MapEntity client, MapEntity restaurant, String foodItem,
+    private Delivery processDelivery(MapEntity client, MapEntity restaurant, String food,
                                      ShippingMethod method, double maxPrice, int maxTime)
         throws NoAvailableDeliveryGuyException {
 
-        validateEntity(client, MapEntityType.CLIENT, "Invalid client MapEntity.");
-        validateEntity(restaurant, MapEntityType.RESTAURANT, "Invalid restaurant MapEntity.");
+        validateMapEntity(client, MapEntityType.CLIENT, "Invalid client MapEntity.");
+        validateMapEntity(restaurant, MapEntityType.RESTAURANT, "Invalid restaurant MapEntity.");
 
-        DeliveryInfo deliveryInfo = controlCenter.findOptimalDeliveryGuy(
-            restaurant.location(), client.location(), maxPrice, maxTime, method
-        );
+        DeliveryInfo deliveryInfo = controlCenter.findOptimalDeliveryGuy(restaurant.location(),
+            client.location(), maxPrice, maxTime, method);
 
         if (deliveryInfo == null) {
-            throw new NoAvailableDeliveryGuyException("No available delivery guy for this task.");
+            throw new NoAvailableDeliveryGuyException("No available delivery guy.");
         }
 
-        return createDelivery(client, restaurant, foodItem, deliveryInfo);
+        return new Delivery(client.location(), restaurant.location(), deliveryInfo.deliveryGuyLocation(),
+            food, deliveryInfo.price(), deliveryInfo.estimatedTime());
     }
 
-    private void validateEntity(MapEntity entity, MapEntityType expectedType, String errorMessage) {
+    private void validateMapEntity(MapEntity entity, MapEntityType expectedType, String errorMessage) {
         if (entity == null || entity.location() == null) {
             throw new InvalidOrderException(errorMessage);
         }
+
         Location location = entity.location();
         if (!isInDefinedBoundaries(location)) {
-            throw new InvalidOrderException(errorMessage + " Location out of bounds: " + location);
+            throw new InvalidOrderException(errorMessage);
         }
-        if (!validateLocationType(entity, expectedType)) {
-            throw new InvalidOrderException(errorMessage + " Expected type: " + expectedType);
+
+        if (!isExpectedType(entity, expectedType)) {
+            throw new InvalidOrderException(errorMessage);
         }
     }
 
-    private boolean validateLocationType(MapEntity entity, MapEntityType type) {
+    private boolean isExpectedType(MapEntity entity, MapEntityType expectedType) {
         Location location = entity.location();
         int x = location.x();
         int y = location.y();
         MapEntity[][] map = controlCenter.getLayout();
-        return map[x][y].type() == type;
+        return map[x][y].type() == expectedType;
     }
 
     private boolean isInDefinedBoundaries(Location location) {
@@ -89,16 +93,5 @@ public class Glovo implements GlovoApi {
         int y = location.y();
         MapEntity[][] map = controlCenter.getLayout();
         return x >= 0 && x < map.length && y >= 0 && y < map[x].length;
-    }
-
-    private Delivery createDelivery(MapEntity client, MapEntity restaurant, String foodItem, DeliveryInfo info) {
-        return new Delivery(
-            client.location(),
-            restaurant.location(),
-            info.deliveryGuyLocation(),
-            foodItem,
-            info.price(),
-            info.estimatedTime()
-        );
     }
 }

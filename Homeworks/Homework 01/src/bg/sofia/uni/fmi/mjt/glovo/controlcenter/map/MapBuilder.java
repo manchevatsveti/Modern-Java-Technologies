@@ -6,7 +6,7 @@ public class MapBuilder {
 
     public static MapEntity[][] buildMapFromLayout(char[][] mapLayout) {
         validateMapLayout(mapLayout);
-        return initializeEntities(mapLayout);
+        return createMap(mapLayout);
     }
 
     private static void validateMapLayout(char[][] mapLayout) {
@@ -15,17 +15,17 @@ public class MapBuilder {
         }
     }
 
-    private static MapEntity[][] initializeEntities(char[][] mapLayout) {
+    private static MapEntity[][] createMap(char[][] mapLayout) {
         int rows = mapLayout.length;
         MapEntity[][] entities = new MapEntity[rows][];
 
         for (int i = 0; i < rows; i++) {
-            entities[i] = initializeRow(mapLayout[i], i);
+            entities[i] = createRow(mapLayout[i], i);
         }
         return entities;
     }
 
-    private static MapEntity[] initializeRow(char[] row, int rowIndex) {
+    private static MapEntity[] createRow(char[] row, int rowIndex) {
         int cols = row.length; //we could have different sized rows, so we calculate each one individually
         MapEntity[] entities = new MapEntity[cols];
         for (int j = 0; j < cols; j++) {

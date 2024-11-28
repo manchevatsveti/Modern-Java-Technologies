@@ -17,7 +17,8 @@ import java.util.Queue;
 
 public class ControlCenter implements ControlCenterApi {
 
-    private static final double NO_CONSTRAINT = -1;
+    private static final int NO_CONSTRAINT_TIME = -1;
+    private static final double NO_CONSTRAINT_PRICE = -1;
 
     private final MapEntity[][] mapLayout;
 
@@ -29,9 +30,9 @@ public class ControlCenter implements ControlCenterApi {
     public DeliveryInfo findOptimalDeliveryGuy(Location restaurantLocation, Location clientLocation,
                                                double maxPrice, int maxTime, ShippingMethod method) {
 
-        validateObjectNotNull(restaurantLocation, "Restaurant location is null.");
-        validateObjectNotNull(clientLocation, "Client location is null.");
-        validateObjectNotNull(method, "Shipping method is null.");
+        validateObjectIsNotNull(restaurantLocation, "Restaurant location is null.");
+        validateObjectIsNotNull(clientLocation, "Client location is null.");
+        validateObjectIsNotNull(method, "Shipping method is null.");
 
         DeliveryInfo bestDelivery = null;
 
@@ -63,20 +64,19 @@ public class ControlCenter implements ControlCenterApi {
     private DeliveryInfo createDeliveryInfo(MapEntity entity, Location restaurant, Location client,
                                             double maxPrice, int maxTime) {
 
-        DeliveryType type = entity.type() == MapEntityType.DELIVERY_GUY_CAR ? DeliveryType.CAR : DeliveryType.BIKE;
-
-        int distance = calculateTotalDistance(entity.location(), restaurant, client);
+        int distance = calculateDistance(entity.location(), restaurant, client);
 
         if (distance == Integer.MAX_VALUE) {
             // if no valid path exists, we skip this delivery guy
             return null;
         }
 
+        DeliveryType type = entity.type() == MapEntityType.DELIVERY_GUY_CAR ? DeliveryType.CAR : DeliveryType.BIKE;
         double price = distance * type.getPricePerKm();
         int time = distance * type.getTimePerKm();
 
-        if ((maxPrice == NO_CONSTRAINT || price <= maxPrice) //comparing doubles
-            && (maxTime == NO_CONSTRAINT || time <= maxTime)) {
+        if ((maxPrice == NO_CONSTRAINT_PRICE || price <= maxPrice) //comparing doubles
+            && (maxTime == NO_CONSTRAINT_TIME || time <= maxTime)) {
             return new DeliveryInfo(entity.location(), price, time, type);
         }
 
@@ -117,7 +117,7 @@ public class ControlCenter implements ControlCenterApi {
         return time1 == time2;
     }
 
-    private int calculateTotalDistance(Location deliveryGuy, Location restaurant, Location client) {
+    private int calculateDistance(Location deliveryGuy, Location restaurant, Location client) {
         int toRestaurant = bfsShortestPath(deliveryGuy, restaurant);
         int toClient = bfsShortestPath(restaurant, client);
 
@@ -129,7 +129,7 @@ public class ControlCenter implements ControlCenterApi {
         return toRestaurant + toClient;
     }
 
-    public static <T> void validateObjectNotNull(T obj, String errorMssg) {
+    public static <T> void validateObjectIsNotNull(T obj, String errorMssg) {
         if (obj == null) {
             throw new IllegalArgumentException(errorMssg);
         }
@@ -137,7 +137,6 @@ public class ControlCenter implements ControlCenterApi {
 
     private int bfsShortestPath(Location start, Location end) {
         //using the bfs traversal method for finding the shortest path in an unweighted graph
-
         boolean[][] visited = initializeVisited();
         Queue<Location> queue = new LinkedList<>();
         queue.add(start);
@@ -149,11 +148,12 @@ public class ControlCenter implements ControlCenterApi {
             Location current = queue.poll();
             visited[current.x()][current.y()] = true;
 
-            if (isTarget(current, end)) {
+            if (isEndReached(current, end)) {
                 return distances.get(current);
             }
 
-            for (Location neighbour : getNeighbours(current)) {
+            List<Location> neighboursToCurrent = getNeighbours(current);
+            for (Location neighbour : neighboursToCurrent) {
                 if (!visited[neighbour.x()][neighbour.y()]) {
                     queue.add(neighbour);
                     visited[neighbour.x()][neighbour.y()] = true;
@@ -177,7 +177,7 @@ public class ControlCenter implements ControlCenterApi {
         return visited;
     }
 
-    private boolean isTarget(Location current, Location end) {
+    private boolean isEndReached(Location current, Location end) {
         return current.x() == end.x() && current.y() == end.y();
     }
 
@@ -199,9 +199,9 @@ public class ControlCenter implements ControlCenterApi {
         return neighbours;
     }
 
-    private boolean isValidMove(int nx, int ny) {
-        return nx >= 0 && nx < mapLayout.length && ny >= 0 && ny < mapLayout[nx].length // check boundaries
-            && mapLayout[nx][ny].type() != MapEntityType.WALL; // avoid walls
+    private boolean isValidMove(int x, int y) {
+        return x >= 0 && x < mapLayout.length && y >= 0 && y < mapLayout[x].length // check boundaries
+            && mapLayout[x][y].type() != MapEntityType.WALL; // avoid walls
     }
 
     @Override
