@@ -7,18 +7,15 @@ import java.io.File;
 
 public class Main {
     public static void main(String[] args) {
-        // Define file paths
-        final String inputFilePath = "kitten.png"; // Replace with your input image path
+        final String inputFilePath = "kitten.png";
         final String grayscaleOutputPath = "output-grayscale_kitten.png";
         final String edgeDetectedOutputPath = "output-edge-detected_kitten.png";
 
-        // Instantiate required classes
         LocalFileSystemImageManager fileManager = new LocalFileSystemImageManager();
         LuminosityGrayscale grayscaleAlgorithm = new LuminosityGrayscale();
         SobelEdgeDetection edgeDetectionAlgorithm = new SobelEdgeDetection(grayscaleAlgorithm);
 
         try {
-            // Load the original image
             System.out.println("Loading image from: " + inputFilePath);
             BufferedImage originalImage = fileManager.loadImage(new File(inputFilePath));
 
