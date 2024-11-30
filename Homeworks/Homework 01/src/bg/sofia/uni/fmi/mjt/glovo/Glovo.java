@@ -10,6 +10,8 @@ import bg.sofia.uni.fmi.mjt.glovo.delivery.ShippingMethod;
 import bg.sofia.uni.fmi.mjt.glovo.exception.InvalidOrderException;
 import bg.sofia.uni.fmi.mjt.glovo.exception.NoAvailableDeliveryGuyException;
 
+import static bg.sofia.uni.fmi.mjt.glovo.controlcenter.utility.ValidationUtils.validateObjectIsNotNull;
+
 public class Glovo implements GlovoApi {
 
     private static final int NO_CONSTRAINT_TIME = -1;
@@ -66,9 +68,7 @@ public class Glovo implements GlovoApi {
     }
 
     private void validateMapEntity(MapEntity entity, MapEntityType expectedType, String errorMessage) {
-        if (entity == null || entity.location() == null) {
-            throw new InvalidOrderException(errorMessage);
-        }
+        validateObjectIsNotNull(entity, errorMessage);
 
         Location location = entity.location();
         if (!isInDefinedBoundaries(location)) {

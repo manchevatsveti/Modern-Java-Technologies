@@ -8,12 +8,8 @@ import bg.sofia.uni.fmi.mjt.glovo.delivery.DeliveryInfo;
 import bg.sofia.uni.fmi.mjt.glovo.delivery.DeliveryType;
 import bg.sofia.uni.fmi.mjt.glovo.delivery.ShippingMethod;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
+import static bg.sofia.uni.fmi.mjt.glovo.controlcenter.utility.DistanceCalculator.calculateDistance;
+import static bg.sofia.uni.fmi.mjt.glovo.controlcenter.utility.ValidationUtils.validateObjectIsNotNull;
 
 public class ControlCenter implements ControlCenterApi {
 
@@ -38,7 +34,7 @@ public class ControlCenter implements ControlCenterApi {
 
         for (MapEntity[] row : mapLayout) {
             for (MapEntity entity : row) {
-                if (isDeliveryGuy(entity)) {
+                if (isDeliveryGuy(entity)) { //if there aren't delivery guys on the map, bestDelivery remains null
 
                     //it creates a delivery only if the constraints are met
                     DeliveryInfo tempDelivery = createDeliveryInfo(entity, restaurantLocation, clientLocation,
@@ -56,7 +52,7 @@ public class ControlCenter implements ControlCenterApi {
         return bestDelivery;
     }
 
-    private boolean isDeliveryGuy(MapEntity entity) {
+    private static boolean isDeliveryGuy(MapEntity entity) {
         return entity.type() == MapEntityType.DELIVERY_GUY_CAR ||
             entity.type() == MapEntityType.DELIVERY_GUY_BIKE;
     }
@@ -64,7 +60,7 @@ public class ControlCenter implements ControlCenterApi {
     private DeliveryInfo createDeliveryInfo(MapEntity entity, Location restaurant, Location client,
                                             double maxPrice, int maxTime) {
 
-        int distance = calculateDistance(entity.location(), restaurant, client);
+        int distance = calculateDistance(entity.location(), restaurant, client, mapLayout);
 
         if (distance == Integer.MAX_VALUE) {
             // if no valid path exists, we skip this delivery guy
@@ -72,10 +68,11 @@ public class ControlCenter implements ControlCenterApi {
         }
 
         DeliveryType type = entity.type() == MapEntityType.DELIVERY_GUY_CAR ? DeliveryType.CAR : DeliveryType.BIKE;
+
         double price = distance * type.getPricePerKm();
         int time = distance * type.getTimePerKm();
 
-        if ((maxPrice == NO_CONSTRAINT_PRICE || price <= maxPrice) //comparing doubles
+        if ((maxPrice == NO_CONSTRAINT_PRICE || price <= maxPrice)
             && (maxTime == NO_CONSTRAINT_TIME || time <= maxTime)) {
             return new DeliveryInfo(entity.location(), price, time, type);
         }
@@ -86,122 +83,15 @@ public class ControlCenter implements ControlCenterApi {
 
     private boolean isBetterDeliveryOption(DeliveryInfo temp, DeliveryInfo currentBest, ShippingMethod method) {
         return switch (method) {
-            case CHEAPEST -> isCheaper(temp.price(), currentBest.price())
-                || (arePricesEqual(temp.price(), currentBest.price()) &&
-                isFaster(temp.estimatedTime(), currentBest.estimatedTime()));
+            case CHEAPEST -> (temp.price() < currentBest.price())
+                || ((temp.price() == currentBest.price()) &&
+                (temp.estimatedTime() < currentBest.estimatedTime()));
 
-            case FASTEST -> isFaster(temp.estimatedTime(), currentBest.estimatedTime())
-                || (areTimesEqual(temp.estimatedTime(), currentBest.estimatedTime()) &&
-                isCheaper(temp.price(), currentBest.price()));
+            case FASTEST -> (temp.estimatedTime() < currentBest.estimatedTime())
+                || ((temp.estimatedTime() == currentBest.estimatedTime()) &&
+                (temp.price() < currentBest.price()));
 
         };
-    }
-
-    private boolean isCheaper(double newPrice, double currentPrice) {
-
-        return newPrice < currentPrice;
-    }
-
-    private boolean arePricesEqual(double price1, double price2) {
-
-        return Double.compare(price1, price2) == 0;
-    }
-
-    private boolean isFaster(int newTime, int currentTime) {
-
-        return newTime < currentTime;
-    }
-
-    private boolean areTimesEqual(int time1, int time2) {
-
-        return time1 == time2;
-    }
-
-    private int calculateDistance(Location deliveryGuy, Location restaurant, Location client) {
-        int toRestaurant = bfsShortestPath(deliveryGuy, restaurant);
-        int toClient = bfsShortestPath(restaurant, client);
-
-        if (toRestaurant == Integer.MAX_VALUE || toClient == Integer.MAX_VALUE) {
-            // if either path is not reachable, return max value
-            return Integer.MAX_VALUE;
-        }
-
-        return toRestaurant + toClient;
-    }
-
-    public static <T> void validateObjectIsNotNull(T obj, String errorMssg) {
-        if (obj == null) {
-            throw new IllegalArgumentException(errorMssg);
-        }
-    }
-
-    private int bfsShortestPath(Location start, Location end) {
-        //using the bfs traversal method for finding the shortest path in an unweighted graph
-        boolean[][] visited = initializeVisited();
-        Queue<Location> queue = new LinkedList<>();
-        queue.add(start);
-
-        Map<Location, Integer> distances = new HashMap<>(); //storing the cells and their distance from the start
-        distances.put(start, 0);
-
-        while (!queue.isEmpty()) {
-            Location current = queue.poll();
-            visited[current.x()][current.y()] = true;
-
-            if (isEndReached(current, end)) {
-                return distances.get(current);
-            }
-
-            List<Location> neighboursToCurrent = getNeighbours(current);
-            for (Location neighbour : neighboursToCurrent) {
-                if (!visited[neighbour.x()][neighbour.y()]) {
-                    queue.add(neighbour);
-                    visited[neighbour.x()][neighbour.y()] = true;
-
-                    int currentDistance = distances.get(current);
-                    distances.put(neighbour, currentDistance + 1);
-                }
-            }
-        }
-        return Integer.MAX_VALUE; // no path found
-    }
-
-    private boolean[][] initializeVisited() {
-        int rows = mapLayout.length;
-
-        boolean[][] visited = new boolean[rows][]; // we could have different sized rows
-        for (int i = 0; i < rows; i++) {
-            visited[i] = new boolean[mapLayout[i].length];
-        }
-
-        return visited;
-    }
-
-    private boolean isEndReached(Location current, Location end) {
-        return current.x() == end.x() && current.y() == end.y();
-    }
-
-    private List<Location> getNeighbours(Location current) {
-        List<Location> neighbours = new ArrayList<>();
-
-        if (isValidMove(current.x() + 1, current.y())) {
-            neighbours.add(mapLayout[current.x() + 1][current.y()].location());
-        }
-        if (isValidMove(current.x() - 1, current.y())) {
-            neighbours.add(mapLayout[current.x() - 1][current.y()].location());
-        }
-        if (isValidMove(current.x(), current.y() + 1)) {
-            neighbours.add(mapLayout[current.x()][current.y() + 1].location());
-        }
-        if (isValidMove(current.x(), current.y() - 1)) {
-            neighbours.add(mapLayout[current.x()][current.y() - 1].location());
-        }
-        return neighbours;
-    }
-
-    private boolean isValidMove(int x, int y) {
-        return x >= 0 && x < mapLayout.length && y >= 0 && y < mapLayout[x].length // check boundaries
-            && mapLayout[x][y].type() != MapEntityType.WALL; // avoid walls
     }
 
     @Override
