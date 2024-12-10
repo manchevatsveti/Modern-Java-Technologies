@@ -1,113 +1,59 @@
 ```markdown
 # Fraud Detector 💳 🕵️‍♂️
 
-### Overview
-In today's world, electronic payments are the backbone of the global financial system. More and more, we prefer shopping online, paying with cards, and transferring money electronically. Unfortunately, these transactions are increasingly targeted by malicious actors who exploit security breaches, steal personal data, and use social engineering tactics to commit various types of fraud. This is a significant issue for both financial institutions and individual users. 
+In today's world, electronic payments are the backbone of the global financial system. Increasingly, we prefer online shopping, card payments, and electronic money transfers. Unfortunately, electronic financial flows have become a frequent target for malicious actors who exploit security breaches, steal personal data, and employ social engineering to commit fraud. This is a pressing issue for both financial institutions and individual users. Fraud is estimated to cause global losses of about 5% of the world's financial turnover, exceeding $6 trillion annually!
 
-Estimates suggest that fraud accounts for about **5% of the global financial turnover**—over **$6 trillion annually**! This drives the need for robust systems and algorithms to reliably detect fraudulent activities and ensure trust in electronic financial operations.
+This necessitates the development of sophisticated systems and algorithms to detect fraud and ensure the security and trustworthiness of electronic financial operations.
 
-Fraud detection involves risk analysis and identifying suspicious transactions—those deemed "outliers" or anomalies that significantly differ from regular patterns. These anomalies are automatically flagged for human review.
+## About Fraud Detection
 
-This week, we will leverage file handling, input-output streams, lambda expressions, and the Java Stream API to create **Fraud Detector**—a system that calculates risk by analyzing user financial transactions. The analysis is based on a real dataset containing over 2,500 transactions from Kaggle. The dataset has been pre-processed, and the final version can be downloaded for use in this project.
+Fraud detection involves analyzing risks and identifying suspicious financial transactions—those that deviate significantly from normal patterns. These outliers (anomalies) are automatically flagged for detailed human review.
 
----
+### Key Features
+This week, we'll apply our knowledge of file handling, I/O streams, lambda expressions, and Java Stream APIs to create a **Fraud Detector** that calculates risks by analyzing users' financial transactions. We'll use a real dataset from Kaggle, containing data for over 2,500 financial transactions. The dataset includes fields like:
 
-### Dataset
-Each line of the dataset contains details of a single transaction in CSV format:
-```
-TransactionID,AccountID,TransactionAmount,TransactionDate,Location,Channel
-```
+- `TransactionID`
+- `AccountID`
+- `TransactionAmount`
+- `TransactionDate`
+- `Location`
+- `Channel`
 
----
+### Transaction Analyzer
+The `TransactionAnalyzer` interface and its implementation (`TransactionAnalyzerImpl`) process the dataset to analyze and retrieve various insights.
 
-### Implementation Details
+#### Interface Methods
+- **`List<Transaction> allTransactions()`**: Retrieve all transactions.
+- **`List<String> allAccountIDs()`**: Get all unique account IDs.
+- **`Map<Channel, Integer> transactionCountByChannel()`**: Group transactions by their channel.
+- **`double amountSpentByUser(String accountID)`**: Calculate the total amount spent by a user.
+- **`List<Transaction> allTransactionsByUser(String accountId)`**: Retrieve transactions for a specific account.
+- **`double accountRating(String accountId)`**: Get the risk rating for an account.
+- **`SortedMap<String, Double> accountsRisk()`**: Calculate risk scores for all accounts, sorted in descending order.
 
-#### Transaction Analyzer
-In the `bg.sofia.uni.fmi.mjt.frauddetector.analyzer` package, create the `TransactionAnalyzerImpl` class with the following constructor:
-```java
-public TransactionAnalyzerImpl(Reader reader, List<Rule> rules)
-```
-This class implements the `TransactionAnalyzer` interface, which provides methods to:
-- Retrieve all transactions.
-- Fetch all unique account IDs.
-- Calculate transaction counts grouped by channel.
-- Compute the total amount spent by a user.
-- Retrieve all transactions for a specific user.
-- Rate the risk associated with a specific account.
-- Analyze and rank account risks based on provided rules.
+### Rules for Risk Calculation
+Fraud detection is based on rules applied to transaction data. Each rule evaluates risk based on anomalies and has a threshold and weight. The sum of all rule weights must equal 1.0.
 
-#### Transactions
-Model transactions using the `Transaction` record:
-```java
-public record Transaction(
-    String transactionID,
-    String accountID,
-    double transactionAmount,
-    LocalDateTime transactionDate,
-    String location,
-    Channel channel
-)
-```
-Include a static factory method to parse a CSV line:
-```java
-public static Transaction of(String line)
-```
+#### Examples
+- **`FrequencyRule`**: Evaluates risk based on transaction frequency within a time window.
+- **`LocationsRule`**: Evaluates risk based on the number of distinct transaction locations.
+- **`SmallTransactionsRule`**: Flags accounts with excessive small transactions.
+- **`ZScoreRule`**: Evaluates risk using the Z-score of transaction amounts.
 
-#### Channels
-Transactions occur via one of three channels:
-- **ATM**
-- **Online**
-- **Bank Branch**
-
-Model this using the `Channel` enum:
-```java
-public enum Channel {
-    ATM, ONLINE, BRANCH
-}
-```
-
----
-
-### Risk Calculation Rules
-Rules evaluate transaction anomalies to calculate account risk. Each rule:
-- Has a **threshold** that triggers it.
-- Includes a **weight** in the range `[0.0, 1.0]`. The sum of all rule weights must equal `1.0`.
-
-#### Rule Implementations
-1. **FrequencyRule**: Flags accounts based on transaction frequency.
-   ```java
-   public FrequencyRule(int transactionCountThreshold, TemporalAmount timeWindow, double weight)
-   ```
-
-2. **LocationsRule**: Flags accounts with transactions from multiple distinct locations.
-   ```java
-   public LocationsRule(int threshold, double weight)
-   ```
-
-3. **SmallTransactionsRule**: Flags accounts with numerous low-value transactions.
-   ```java
-   public SmallTransactionsRule(int countThreshold, double amountThreshold, double weight)
-   ```
-
-4. **ZScoreRule**: Flags accounts with a high Z-score (statistical outlier) for transaction amounts.
-   ```java
-   public ZScoreRule(double zScoreThreshold, double weight)
-   ```
-
----
+### Implementation Highlights
+1. **Transaction Modeling**: Transactions are represented by the `Transaction` record, parsed from the dataset using a factory method.
+2. **Channels**: Transactions can occur via `ATM`, `ONLINE`, or `BRANCH`, represented by the `Channel` enum.
 
 ### Example Usage
 ```java
-import bg.sofia.uni.fmi.mjt.frauddetector.analyzer.TransactionAnalyzer;
-import bg.sofia.uni.fmi.mjt.frauddetector.analyzer.TransactionAnalyzerImpl;
+import bg.sofia.uni.fmi.mjt.frauddetector.analyzer.*;
 import bg.sofia.uni.fmi.mjt.frauddetector.rule.*;
-import java.io.FileReader;
-import java.io.Reader;
-import java.time.Period;
-import java.util.List;
+import java.io.*;
+import java.time.*;
+import java.util.*;
 
 public class Main {
-    public static void main(String... args) throws Exception {
+    public static void main(String... args) throws FileNotFoundException {
         String filePath = "dataset.csv";
 
         Reader reader = new FileReader(filePath);
@@ -121,26 +67,23 @@ public class Main {
         TransactionAnalyzer analyzer = new TransactionAnalyzerImpl(reader, rules);
 
         System.out.println(analyzer.allAccountIDs());
-        System.out.println(analyzer.allTransactionsByUser(analyzer.allTransactions().get(0).accountID()));
+        System.out.println(analyzer.allTransactionsByUser("account1"));
         System.out.println(analyzer.accountsRisk());
     }
 }
 ```
 
----
-
 ### Testing
-Test your implementation locally with example cases and create unit tests for all classes.
+- First, test locally with sample data.
+- Then, create **unit tests** for all components.
 
----
-
-### Directory Structure
-```
+### Project Structure
+```plaintext
 src
 └── bg.sofia.uni.fmi.mjt.frauddetector
     ├── analyzer
     │     ├── TransactionAnalyzer.java
-    │     ├── TransactionAnalyzerImpl.java  
+    │     ├── TransactionAnalyzerImpl.java
     ├── rule
     │     ├── FrequencyRule.java
     │     ├── LocationsRule.java
@@ -150,7 +93,8 @@ src
     ├── transaction
     │     ├── Channel.java
     │     ├── Transaction.java
-
 test
 └── bg.sofia.uni.fmi.mjt.frauddetector
+     └── ...
+```
 ```
