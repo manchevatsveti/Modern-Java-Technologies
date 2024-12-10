@@ -1,4 +1,4 @@
-```markdown
+
 # Fraud Detector 💳 🕵️‍♂️
 
 In today's world, electronic payments are the backbone of the global financial system. Increasingly, we prefer online shopping, card payments, and electronic money transfers. Unfortunately, electronic financial flows have become a frequent target for malicious actors who exploit security breaches, steal personal data, and employ social engineering to commit fraud. This is a pressing issue for both financial institutions and individual users. Fraud is estimated to cause global losses of about 5% of the world's financial turnover, exceeding $6 trillion annually!
