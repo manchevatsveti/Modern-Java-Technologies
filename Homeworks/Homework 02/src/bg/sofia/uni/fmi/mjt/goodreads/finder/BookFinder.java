@@ -54,32 +54,39 @@ public class BookFinder implements BookFinderAPI {
 
     private boolean matchesGenres(List<String> bookGenres, Set<String> genres, MatchOption option) {
         return switch (option) {
-            case MATCH_ALL -> new HashSet<>(bookGenres).containsAll(genres);
+            case MATCH_ALL -> bookGenres.containsAll(genres);
             case MATCH_ANY -> genres.stream().anyMatch(bookGenres::contains);
         };
     }
 
     @Override
     public List<Book> searchByKeywords(Set<String> keywords, MatchOption option) {
-        String keywordsToString = String.join(" ", keywords);
-
-        List<String> keywordsTokenized = tokenizer.tokenize(keywordsToString)
-            .stream()
+        List<String> keywordsDistinct =
+            keywords.stream()
             .distinct()
             .toList();
 
         return books.stream()
-            .filter(book -> matchesKeywords(book, keywordsTokenized, option))
+            .filter(book -> matchesKeywords(book, keywordsDistinct, option))
             .toList();
     }
 
     private boolean matchesKeywords(Book book, List<String> keywords, MatchOption option) {
-        List<String> bookTokens = tokenizer.tokenize(book.title() + " " + book.description());
+        Set<String> bookTokens = new HashSet<>();
+        merge(bookTokens, book.title());
+        merge(bookTokens, book.description());
 
         return switch (option) {
             case MATCH_ANY -> bookTokens.stream().anyMatch(keywords::contains);
-            case MATCH_ALL -> new HashSet<>(bookTokens).containsAll(keywords);
+            case MATCH_ALL ->  bookTokens.containsAll(keywords);
         };
+    }
+
+    void merge(Set<String> set, String text) {
+        List<String> tokenizedText = tokenizer.tokenize(text);
+
+        set.addAll(tokenizedText.stream()
+            .collect(Collectors.toSet()));
     }
 
 }
