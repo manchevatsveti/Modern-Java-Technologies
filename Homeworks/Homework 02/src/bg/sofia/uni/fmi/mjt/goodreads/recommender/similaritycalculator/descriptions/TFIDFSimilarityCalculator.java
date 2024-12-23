@@ -63,7 +63,7 @@ public class TFIDFSimilarityCalculator implements SimilarityCalculator {
 
         Map<String, Long> wordsByCount =
             words.stream()
-            .collect(Collectors.groupingBy(word -> word, Collectors.counting()));
+                .collect(Collectors.groupingBy(word -> word, Collectors.counting()));
 
         return wordsByCount.entrySet()
             .stream()

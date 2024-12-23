@@ -61,32 +61,21 @@ public class BookFinder implements BookFinderAPI {
 
     @Override
     public List<Book> searchByKeywords(Set<String> keywords, MatchOption option) {
-        List<String> keywordsDistinct =
-            keywords.stream()
-            .distinct()
-            .toList();
+        Set<String> keywordsTokenized = keywords.stream()
+            .map(String::toLowerCase)
+            .collect(Collectors.toSet());
 
         return books.stream()
-            .filter(book -> matchesKeywords(book, keywordsDistinct, option))
+            .filter(book -> matchesKeywords(book, keywordsTokenized, option))
             .toList();
     }
 
-    private boolean matchesKeywords(Book book, List<String> keywords, MatchOption option) {
-        Set<String> bookTokens = new HashSet<>();
-        merge(bookTokens, book.title());
-        merge(bookTokens, book.description());
-
+    private boolean matchesKeywords(Book book, Set<String> keywords, MatchOption option) {
+        List<String> bookTokens = tokenizer.tokenize(book.title() + " " + book.description());
         return switch (option) {
             case MATCH_ANY -> bookTokens.stream().anyMatch(keywords::contains);
-            case MATCH_ALL ->  bookTokens.containsAll(keywords);
+            case MATCH_ALL -> new HashSet<>(bookTokens).containsAll(keywords);
         };
-    }
-
-    void merge(Set<String> set, String text) {
-        List<String> tokenizedText = tokenizer.tokenize(text);
-
-        set.addAll(tokenizedText.stream()
-            .collect(Collectors.toSet()));
     }
 
 }

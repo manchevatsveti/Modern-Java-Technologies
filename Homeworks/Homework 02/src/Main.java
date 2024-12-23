@@ -22,7 +22,9 @@ public class Main {
 
         BookFinder bookFinder = new BookFinder(books, tokenizer);
 
-        List<Book> match = bookFinder.searchByKeywords(Set.of("The Chronicles of Narnia ourselves chair whom shan't"), MatchOption.MATCH_ALL);
+        Set<String> keywords = Set.of("chronicles", "Narnia", "prince" );
+
+        List<Book> match = bookFinder.searchByKeywords(keywords, MatchOption.MATCH_ALL);
 
     }
 }

@@ -104,56 +104,40 @@ public class BookFinderTest {
 
     @Test
     void testSearchByKeywordsShouldReturnBooksMatchingAllKeywords() {
-        when(tokenizerMock.tokenize("Effective Java"))
-            .thenReturn(List.of("effective", "java"));
+        when(tokenizerMock.tokenize("Effective Java Java best practices"))
+            .thenReturn(List.of("effective", "java", "best", "practices"));
 
-        when(tokenizerMock.tokenize("Java best practices"))
-            .thenReturn(List.of("java", "best", "practices"));
+        when(tokenizerMock.tokenize("Clean Code Writing cleaner code"))
+            .thenReturn(List.of("clean", "code", "writing", "cleaner"));
 
-        when(tokenizerMock.tokenize("Clean Code"))
-            .thenReturn(List.of("clean", "code"));
-
-        when(tokenizerMock.tokenize("Writing cleaner code"))
-            .thenReturn(List.of("code", "writing", "cleaner"));
-
-        when(tokenizerMock.tokenize("Clean Code 2"))
+        when(tokenizerMock.tokenize("Clean Code 2 -"))
             .thenReturn(List.of("clean", "code", "2"));
 
-        when(tokenizerMock.tokenize("-"))
-            .thenReturn(List.of("-"));
+        List<Book> result = bookFinder.searchByKeywords(Set.of("code", "clean", "2"), MatchOption.MATCH_ALL);
 
-        List<Book> result = bookFinder.searchByKeywords(Set.of("clean", "code", "writing"), MatchOption.MATCH_ALL);
-        List<Book> expected = List.of(book2);
+        List<Book> expectedBooks = List.of(book3);
 
-        assertTrue(result.size() == expected.size() && result.containsAll(expected) && expected.containsAll(result),
-            "searchByKeywords() should return books matching all of the specified keywords.");
+        assertTrue(result.size() == expectedBooks.size() && result.containsAll(expectedBooks) && expectedBooks.containsAll(result),
+            "searchByKeywords() should return books matching any of the specified keywords.");
     }
 
     @Test
     void testSearchByKeywordsShouldReturnBooksMatchingAnyKeywords() {
-        when(tokenizerMock.tokenize("Effective Java"))
-            .thenReturn(List.of("effective", "java"));
+        when(tokenizerMock.tokenize("Effective Java Java best practices"))
+            .thenReturn(List.of("effective", "java", "best", "practices"));
 
-        when(tokenizerMock.tokenize("Java best practices"))
-            .thenReturn(List.of("java", "best", "practices"));
+        when(tokenizerMock.tokenize("Clean Code Writing cleaner code"))
+            .thenReturn(List.of("clean", "code", "writing", "cleaner"));
 
-        when(tokenizerMock.tokenize("Clean Code"))
+        when(tokenizerMock.tokenize("Clean Code 2 -"))
             .thenReturn(List.of("clean", "code"));
 
-        when(tokenizerMock.tokenize("Writing cleaner code"))
-            .thenReturn(List.of("code", "writing", "cleaner"));
+        List<Book> result = bookFinder.searchByKeywords(Set.of("java", "clean"), MatchOption.MATCH_ANY);
 
-        when(tokenizerMock.tokenize("Clean Code 2"))
-            .thenReturn(List.of("clean", "code", "2"));
+        List<Book> expectedBooks = List.of(book2, book1, book3);
 
-        when(tokenizerMock.tokenize("-"))
-            .thenReturn(List.of("-"));
-
-        List<Book> result = bookFinder.searchByKeywords(Set.of("clean", "code", "best"), MatchOption.MATCH_ANY);
-        List<Book> expected = List.of(book1, book2, book3);
-
-        assertTrue(result.size() == expected.size() && result.containsAll(expected) && expected.containsAll(result),
-            "searchByKeywords() should return books matching all of the specified keywords.");
+        assertTrue(result.size() == expectedBooks.size() && result.containsAll(expectedBooks) && expectedBooks.containsAll(result),
+            "searchByKeywords() should return books matching any of the specified keywords.");
     }
 
     @Test
